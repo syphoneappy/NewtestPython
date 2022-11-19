@@ -15,8 +15,27 @@ app.config["MYSQL_DB"] =  db['mysql_db']
 
 MySQL = MySQL(app)
 
-@app.route('/')
+@app.route('/',methods =['GET','POST'])
 def hello_world():
+	if request.method == 'POST' and 'email' in request.form and 'password' in request.form:
+		userDetails = request.form
+		email = userDetails['email']
+		password = userDetails['password']
+		comm = MySQL.connection.cursor()
+		comm.execute("""select Password from cred where email = '%s'"""%(email))
+		hash = comm.fetchone()
+		user = pbkdf2_sha256.verify(password, hash[0])
+		print(user)
+		if user == True:
+			pass
+		# cursor = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+		# cursor.execute('SELECT * FROM cred Where email = %s and password = %s',(email,user))
+		# accounts = cursor.fetchone()
+		# if accounts:
+		# 	session['loggedin'] = True
+		# 	session['email'] = accounts['email']
+		# 	session['name'] = accounts['name']
+		# 	return "Welcome"
 	return render_template("index.html")
 
 @app.route("/register",methods =['GET','POST'])
@@ -41,15 +60,17 @@ def register():
 			flash("This Email already exist!")
 			return redirect("/")
 		else:
-			# try:
-			con = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
-			con.execute("insert into cred(name,email,password) value(%s, %s,%s)",(name,email,hashs))
-			MySQL.connection.commit()
-			flash("Succesfully Created Your Account")
-			return redirect("/")
-			# except:
-			# 	flash("Ohhh ho! Something Went Wrong...")
-			# 	return redirect("/register")
+			try:
+				con = MySQL.connection.cursor(MySQLdb.cursors.DictCursor)
+				con.execute("insert into cred(name,email,password) value(%s, %s,%s)",(name,email,hashs))
+				MySQL.connection.commit()
+				flash("Succesfully Created Your Account")
+				return redirect("/")
+			except:
+				flash("Ohhh ho! Something Went Wrong...")
+				return redirect("/register")
 	return render_template("register.html")
+
+
 if __name__ == '__main__':
 	app.run(debug=True)
